@@ -21,6 +21,7 @@ public class MapManager : MonoBehaviour
     public Tilemap nonemap;
     public Tilemap thingMap;
     public Tilemap tmpMap;
+    public Tilemap blockMap;
     public PlayerMovement Player;
     public GameObject PlayerNode;
     public List<Rigidbody2D> boxList = new List<Rigidbody2D>();
@@ -36,6 +37,7 @@ public class MapManager : MonoBehaviour
     public GameObject GridNode;
     [SerializeField]private Vector3Int mapSize;
     
+
     void Awake()
     {
         hideColliderList = new List<HideCollider>();
@@ -49,6 +51,7 @@ public class MapManager : MonoBehaviour
     }
     
     void OnNewScene(){
+        blockMap = GameObject.Find("blockmap").GetComponent<Tilemap>();
         // if(GameObject.Find("box")){
         //     box = GameObject.Find("box").GetComponent<Rigidbody2D>();
         // }
@@ -202,6 +205,8 @@ public class MapManager : MonoBehaviour
         nonemap.ClearAllTiles();
         newTile = ScriptableObject.CreateInstance<CustomTile>();
         ((CustomTile)newTile).gameObjectToPlace = tilePrefab; // 设置你的GameObject
+        // mapSize = blockmap.
+        mapSize = blockMap.cellBounds.size;
         for (int x = (int)-mapSize.x; x < mapSize.x; x++)
         {
             for (int y = (int)-mapSize.y; y < mapSize.y ; y++)
