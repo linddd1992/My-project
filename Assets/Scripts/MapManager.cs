@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using TreeEditor;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -22,7 +23,7 @@ public class MapManager : MonoBehaviour
     public Tilemap tmpMap;
     public PlayerMovement Player;
     public GameObject PlayerNode;
-    public Rigidbody2D box;
+    public List<Rigidbody2D> boxList = new List<Rigidbody2D>();
     public GameObject tilePrefab;
 
     List<HideCollider> hideColliderList ;
@@ -48,11 +49,30 @@ public class MapManager : MonoBehaviour
     }
     
     void OnNewScene(){
-        if(GameObject.Find("box")){
-            box = GameObject.Find("box").GetComponent<Rigidbody2D>();
+        // if(GameObject.Find("box")){
+        //     box = GameObject.Find("box").GetComponent<Rigidbody2D>();
+        // }
+                // 查找所有带有 "box" 标签的游戏对象
+        GameObject[] boxObjects = GameObject.FindGameObjectsWithTag("box");
+
+        // 遍历这些游戏对象并获取它们的 Rigidbody2D 组件
+        foreach (GameObject box in boxObjects)
+        {
+            Rigidbody2D rb = box.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                boxList.Add(rb);
+            }
         }
+
+        // 或者使用 LINQ 一次性完成
+        boxList = GameObject.FindGameObjectsWithTag("box")
+                            .Select(box => box.GetComponent<Rigidbody2D>())
+                            .Where(rb => rb != null)
+                            .ToList();
+                            
         if(GameObject.Find("Player")){
-        Player = GameObject.Find("Player").GetComponent<PlayerMovement>();
+            Player = GameObject.Find("Player").GetComponent<PlayerMovement>();
         }
         initNoneMap();
         
@@ -83,12 +103,12 @@ public class MapManager : MonoBehaviour
         }
         if (Input.GetMouseButtonDown(0))
         {
-
+            Camera.main.GetComponent<Cemara>().enabled  = false;
             nonemap.gameObject.SetActive(!nonemap.isActiveAndEnabled);
             tilemap.gameObject.SetActive(!tilemap.isActiveAndEnabled);
             //box.GetComponent<box>().onChangeState();
             // 计算旋转
-            Quaternion rotation = Quaternion.Euler(0, 180, 0);
+            // Quaternion rotation = Quaternion.Euler(0, 180, 0);
 
             // 将摄像头的中心点作为旋转的轴点
             Vector3 axisPoint = Camera.main.transform.position;
@@ -99,13 +119,44 @@ public class MapManager : MonoBehaviour
                 Player.onChangeState();
             }
 
-            // 将旋转应用到游戏对象
-
+            // Rotate180Degrees();
             onChangeState();
             GridNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
             PlayerNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
+            // Camera.main.GetComponent<Cemara>().enabled  = true;
 
         }
+    }
+
+    void Rotate180Degrees()
+    {
+        var gridNode = GridNode.transform;
+        var playerNode = PlayerNode.transform;
+        // 获取屏幕中心点的世界坐标
+        Vector3 screenCenter = Camera.main.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, Camera.main.nearClipPlane));
+        Debug.Log("Screen Center: " + screenCenter);
+
+        // 计算 GridNode 相对于屏幕中心点的局部坐标
+        Vector3 offset = gridNode.position - screenCenter;
+        Debug.Log("Offset: " + offset);
+
+        // 应用180度旋转
+        Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, 180));
+        Vector3 rotatedOffset = rotation * offset;
+        Debug.Log("Rotated Offset: " + rotatedOffset);
+
+        // 将局部坐标转换回世界坐标
+        Vector3 newPosition = screenCenter + rotatedOffset;
+        Debug.Log("New Position: " + newPosition);
+
+        // 更新 GridNode 的位置
+        gridNode.position = newPosition;
+        // 更新 GridNode 的旋转
+        gridNode.rotation = rotation * gridNode.rotation;
+
+        playerNode.position = newPosition;
+        playerNode.rotation = rotation * playerNode.rotation;
+        
     }
 
     IEnumerator RotateNodeAroundCenter(float degrees)
@@ -139,7 +190,11 @@ public class MapManager : MonoBehaviour
         // 确保最终旋转到位
         GridNode.transform.RotateAround(center, Vector3.up, totalAngle - currentAngle);
         //GridNode.transform.rotation = Quaternion.identity;
-       box.GetComponent<box>().onChangeState();
+        for (int i = 0; i < boxList.Count; i++)
+        {
+            var box = boxList[i];
+            box.GetComponent<box>().onChangeState();
+        }
     }
 
 
@@ -161,68 +216,74 @@ public class MapManager : MonoBehaviour
         nonemap.gameObject.SetActive(false);
     }
 
+    
+
     public void onChangeState()
     {
         // nonemap.GetComponent<TilemapCollider2D>().hasTilemapChanges = true;
         if (nonemap.isActiveAndEnabled)
         {
-            // 获取碰撞体的世界空间边界
-            if (box) {
-var collider2D = box.GetComponent<BoxCollider2D>();
-            Bounds bounds = box.GetComponent<BoxCollider2D>().bounds;
-            // 转换边界到瓦片地图坐标
-            Vector3Int min = nonemap.WorldToCell(bounds.min);
-            Vector3Int max = nonemap.WorldToCell(bounds.max);
-            // Debug.Log("bounds 1 " + bounds.min);
-            // Debug.Log("bounds 2 " + bounds.max);
-            // Debug.Log("bounds min " + min );
-            // Debug.Log("bounds max " + max );
-            // 遍历区域内的所有瓦片
-            for (int x = min.x -1; x <= max.x+1; x++)
+            for (int i = 0; i < boxList.Count; i++)
             {
-                for (int y = min.y-1; y <= max.y+1; y++)
-                {
-                    Vector3Int position = new Vector3Int(x, y, 0);
-                    TileBase tile = nonemap.GetTile(position);
-                    //Debug.Log("position"+position);
-
-                    if (tile != null)
+                var box = boxList[i];
+                // 获取碰撞体的世界空间边界
+                if (box) {
+                    var collider2D = box.GetComponent<BoxCollider2D>();
+                    Bounds bounds = box.GetComponent<BoxCollider2D>().bounds;
+                    // 转换边界到瓦片地图坐标
+                    Vector3Int min = nonemap.WorldToCell(bounds.min);
+                    Vector3Int max = nonemap.WorldToCell(bounds.max);
+                    Debug.Log("bounds 1 " + bounds.min);
+                    Debug.Log("bounds 2 " + bounds.max);
+                    Debug.Log("bounds min " + min );
+                    Debug.Log("bounds max " + max );
+                    // 遍历区域内的所有瓦片
+                    for (int x = min.x -1; x <= max.x+1; x++)
                     {
-                        var tileGameObject = nonemap.GetInstantiatedObject(position);
-                        // 检查是否有其他碰撞体接触这个瓦片
-                        // Collider2D[] colliders = Physics2D.OverlapPointAll(nonemap.GetCellCenterWorld(position));
-                        // foreach (var otherCollider in colliders)
+                        for (int y = min.y-1; y <= max.y+1; y++)
                         {
-                            // if (otherCollider == collider2D) // 排除自身
+                            Vector3Int position = new Vector3Int(x, y, 0);
+                            TileBase tile = nonemap.GetTile(position);
+                            //Debug.Log("position"+position);
+
+                            if (tile != null)
                             {
-                                //tileGameObject = nonemap.GetInstantiatedObject(position);
-                                 Debug.Log(tileGameObject.name);
-
-                                if (tileGameObject != null)
+                                var tileGameObject = nonemap.GetInstantiatedObject(position);
+                                // 检查是否有其他碰撞体接触这个瓦片
+                                // Collider2D[] colliders = Physics2D.OverlapPointAll(nonemap.GetCellCenterWorld(position));
+                                // foreach (var otherCollider in colliders)
                                 {
-                                    Bounds tileBounds = tileGameObject.GetComponent<Renderer>().bounds;
-                                    HideCollider collider = new HideCollider();
-                                    collider.blockObj = tileGameObject;
-                                    collider.position = tileGameObject.transform.position;
-                                    collider.tilePos = position;
-                                    hideColliderList.Add(collider);
-
-                                    if (IsCompletelyInside(collider2D.bounds, tileBounds, box.transform, tileGameObject.transform))
+                                    // if (otherCollider == collider2D) // 排除自身
                                     {
-                                        nonemap.SetTile(position, null);
-                                        nonemap.RefreshTile(position);
-                                        continue;
-                                    }
-                                    SetColliderSize(collider2D.bounds, tileBounds, tileGameObject.transform,position);
-                                    nonemap.RefreshTile(position);
+                                        //tileGameObject = nonemap.GetInstantiatedObject(position);
+                                        Debug.Log(tileGameObject.name);
 
+                                        if (tileGameObject != null)
+                                        {
+                                            Bounds tileBounds = tileGameObject.GetComponent<Renderer>().bounds;
+                                            HideCollider collider = new HideCollider();
+                                            collider.blockObj = tileGameObject;
+                                            collider.position = tileGameObject.transform.position;
+                                            collider.tilePos = position;
+                                            hideColliderList.Add(collider);
+
+                                            if (IsCompletelyInside(collider2D.bounds, tileBounds, box.transform, tileGameObject.transform))
+                                            {
+                                                nonemap.SetTile(position, null);
+                                                nonemap.RefreshTile(position);
+                                                continue;
+                                            }
+                                            SetColliderSize(collider2D.bounds, tileBounds, tileGameObject.transform,position);
+                                            nonemap.RefreshTile(position);
+
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                    box.gameObject.SetActive(false);
                 }
-            }
-            box.gameObject.SetActive(false);
             }
             
         }
@@ -235,8 +296,12 @@ var collider2D = box.GetComponent<BoxCollider2D>();
                 }
             }
             hideColliderList.Clear();
-            if (box) {
-                box.gameObject.SetActive(true);
+            for (int i = 0; i < boxList.Count; i++)
+            {
+                var box = boxList[i];
+                if (box) {
+                    box.gameObject.SetActive(true);
+                }
             }
             tmpMap.ClearAllTiles();
 
@@ -283,17 +348,19 @@ var collider2D = box.GetComponent<BoxCollider2D>();
 
         // 调整Transform的位置到相交区域的中心
         var oldposition = intersectionBounds.center;
+        var boxScale = Vector3.one;
         // 调整Transform的缩放到相交区域的大小
         if(Math.Round(intersectionBounds.size.y, 1) > 0 && Math.Round(intersectionBounds.size.x, 1) > 0)
         {
             var localScale = new Vector3(innerTransform.localScale.x - intersectionBounds.size.x, innerTransform.localScale.y, innerTransform.localScale.z);
-            if(localScale.x <= 0 || localScale.y <= 0)
+            if(localScale.x <= 0.05 || localScale.y <= 0.05)
             {
                 nonemap.SetTile(vector3Int, null);
                 nonemap.RefreshTile(vector3Int);
                 return;
             }
-            //innerTransform.localScale = localScale;
+            boxScale = localScale;
+            // innerTransform.localScale = localScale;
             //if (boundsB.min.x < boundsA.min.x)
             //{
             //    innerTransform.position = new Vector3(innerTransform.position.x - intersectionBounds.size.x / 2, innerTransform.position.y, innerTransform.position.z);
@@ -305,6 +372,7 @@ var collider2D = box.GetComponent<BoxCollider2D>();
         }
 
         GameObject innerObject = GameObject.Instantiate(innerTransform.gameObject);
+
         nonemap.SetTile(vector3Int, null);
         nonemap.RefreshTile(vector3Int);
         var collidernewTile = ScriptableObject.CreateInstance<TmpTile>();
@@ -313,7 +381,7 @@ var collider2D = box.GetComponent<BoxCollider2D>();
         tmpMap.RefreshTile(vector3Int);
         var tileGameObject = tmpMap.GetInstantiatedObject(vector3Int).transform;
         BoxCollider2D collider = tileGameObject.GetComponent<BoxCollider2D>();
-
+        tileGameObject.localScale = boxScale;
         if (Math.Round(intersectionBounds.size.y, 1) > 0 && Math.Round(intersectionBounds.size.x, 1) > 0)
         {
             if (boundsB.min.x < boundsA.min.x)
