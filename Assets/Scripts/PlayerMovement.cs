@@ -22,7 +22,7 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField] private AudioSource jumpSoundEffect;
 
-
+    public MovementState playerState;
     // Start is called before the first frame update    
     private void Start()
     {
@@ -40,7 +40,6 @@ public class PlayerMovement : MonoBehaviour
         {
             // 获取角色的脚底位置
             Vector3 pivotPoint = new Vector3(transform.position.x, transform.position.y, transform.position.z); // 获取脚底位置
-    Debug.Log("fan");
             // 翻转 SpriteRenderer 的 Y 轴
             playNode.transform.GetComponent<SpriteRenderer>().flipY = !playNode.transform.GetComponent<SpriteRenderer>().flipY;
             playNode.transform.localPosition = new Vector3(playNode.transform.localPosition.x, playNode.transform.localPosition.y - 1f, playNode.transform.localPosition.z);
@@ -51,7 +50,6 @@ public class PlayerMovement : MonoBehaviour
         {
             // 获取角色的脚底位置
             Vector3 pivotPoint = new Vector3(transform.position.x, transform.position.y, transform.position.z); // 获取脚底位置
-    Debug.Log("zheng");
 
             // 翻转 SpriteRenderer 的 Y 轴
             playNode.transform.GetComponent<SpriteRenderer>().flipY = !playNode.transform.GetComponent<SpriteRenderer>().flipY;
@@ -128,7 +126,7 @@ public class PlayerMovement : MonoBehaviour
         {
 
         }
-
+        playerState = state;
         anim.SetInteger("state", (int)state);
 
     }
@@ -142,10 +140,11 @@ public class PlayerMovement : MonoBehaviour
         float length = 1f; // 可以根据需要调整此值
 
         // 使用 Raycast 向下发射一条射线，检查与地面层的碰撞
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, length, jumpableGround);
+        RaycastHit2D hit1 = Physics2D.Raycast(origin + new Vector2(-0.4f, 0), Vector2.down, length, jumpableGround);
+        RaycastHit2D hit2 = Physics2D.Raycast(origin + new Vector2(0.4f, 0), Vector2.down, length, jumpableGround);
 
         // 返回是否检测到地面
-        return hit.collider != null;
+        return hit1.collider != null && hit2.collider != null;
     }
 
     // void OnCollisionEnter2D(Collision2D collision)

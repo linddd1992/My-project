@@ -106,7 +106,7 @@ public class MapManager : MonoBehaviour
         }
         if (Input.GetMouseButtonDown(0))
         {
-            Camera.main.GetComponent<Cemara>().enabled  = false;
+            // Camera.main.GetComponent<Cemara>().enabled  = false;
             nonemap.gameObject.SetActive(!nonemap.isActiveAndEnabled);
             tilemap.gameObject.SetActive(!tilemap.isActiveAndEnabled);
             //box.GetComponent<box>().onChangeState();
