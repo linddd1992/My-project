@@ -104,7 +104,7 @@ public class MapManager : MonoBehaviour
         if (GameManager.Instance.CurrentState != GameManager.GameState.Playing){
             return;
         }
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && CheckCanChangeState())
         {
             // Camera.main.GetComponent<Cemara>().enabled  = false;
             nonemap.gameObject.SetActive(!nonemap.isActiveAndEnabled);
@@ -128,6 +128,15 @@ public class MapManager : MonoBehaviour
             PlayerNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
             // Camera.main.GetComponent<Cemara>().enabled  = true;
 
+        }
+    }
+
+    bool CheckCanChangeState(){
+        if(Player){
+            if (!Player.CheckCanChangeState())
+            {
+                return false;
+            }
         }
     }
 

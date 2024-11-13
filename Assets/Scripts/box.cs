@@ -54,6 +54,16 @@ public class box : MonoBehaviour
                innerMin.y >= outerMin.y && innerMax.y <= outerMax.y;
     }
 
+    bool CheckCanMove(){
+        //判断盒子上方是否有人或者盒子
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.up, 0.5f, layerMask);
+        if (hit.collider != null)
+        {
+            
+        }
+        return true;
+    }
+
     public void SetColliderSize(BoxCollider2D colliderA, BoxCollider2D colliderB)
     {
         Bounds boundsA = colliderA.bounds;

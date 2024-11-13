@@ -18,7 +18,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 7f;
     public GameObject playNode;
 
-    private enum MovementState { idle, running, jumping, falling }
+    public enum MovementState { idle, running, jumping, falling }
 
     [SerializeField] private AudioSource jumpSoundEffect;
 
@@ -145,6 +145,15 @@ public class PlayerMovement : MonoBehaviour
 
         // 返回是否检测到地面
         return hit1.collider != null && hit2.collider != null;
+    }
+
+    bool CheckCanChangeState(){
+        if (!IsGrounded() && playerState == MovementState.jumping){
+            return false;
+        }
+        else{
+            
+        }
     }
 
     // void OnCollisionEnter2D(Collision2D collision)
