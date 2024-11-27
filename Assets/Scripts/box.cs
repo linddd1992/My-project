@@ -59,9 +59,21 @@ public class box : MonoBehaviour
         RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.up, 0.5f, layerMask);
         if (hit.collider != null)
         {
-            
+            return false;
         }
         return true;
+    }
+
+    void OnTriggerEnter2D(Collider2D other){
+        if (other.CompareTag("Player")){
+            if (!CheckCanMove()){
+                
+            }
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D other){
+        
     }
 
     public void SetColliderSize(BoxCollider2D colliderA, BoxCollider2D colliderB)

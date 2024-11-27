@@ -26,7 +26,7 @@ public class MapManager : MonoBehaviour
     public GameObject PlayerNode;
     public List<Rigidbody2D> boxList = new List<Rigidbody2D>();
     public GameObject tilePrefab;
-
+    public GameObject RotateNode;
     List<HideCollider> hideColliderList ;
 
     // Start is called before the first frame update
@@ -104,6 +104,11 @@ public class MapManager : MonoBehaviour
         if (GameManager.Instance.CurrentState != GameManager.GameState.Playing){
             return;
         }
+        if(!RotateNode){
+            RotateNode = GameObject.Find("GridNode");
+        }
+            // 将目标节点的位置设置为摄像机的位置
+
         if (Input.GetMouseButtonDown(0) && CheckCanChangeState())
         {
             // Camera.main.GetComponent<Cemara>().enabled  = false;
@@ -124,8 +129,39 @@ public class MapManager : MonoBehaviour
 
             // Rotate180Degrees();
             onChangeState();
-            GridNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
-            PlayerNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
+            // GridNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
+            // PlayerNode.transform.RotateAround(axisPoint, new Vector3(0, 0, 1), 180);
+
+                // 获取当前屏幕的中心点的视口坐标
+            Vector3 screenCenter = new Vector3(0.5f, 0.5f, Camera.main.nearClipPlane);
+                // 记录旋转前的位置
+            Vector3 originalGridNodePosition = GridNode.transform.position;
+            Vector3 originalPlayerNodePosition = PlayerNode.transform.position;
+            // 将视口坐标转换为世界坐标
+            Vector3 centerPoint = Camera.main.ViewportToWorldPoint(screenCenter);
+
+            // 确定旋转的角度
+            float rotationAngle = 180f; // 或者其他角度
+            Debug.Log("centerPoint : " + centerPoint);
+            // 进行旋转
+            GridNode.transform.RotateAround(centerPoint, Vector3.forward, rotationAngle);
+            GridNode.transform.position = Vector3.zero;
+            // PlayerNode.transform.RotateAround(centerPoint, Vector3.forward, rotationAngle);
+            // if(GridNode.transform.rotation.z == 0){
+            //     GridNode.transform.rotation = Quaternion.Euler(0, 0, 180);
+
+            // }else{
+            //     GridNode.transform.rotation = Quaternion.Euler(0, 0, 0);
+
+
+            // }
+            // Vector3 cameraPosition = Camera.main.transform.position;
+            // GridNode.transform.position = cameraPosition + new Vector3(0, 0, 0); 
+            // 恢复 GridNode 和 PlayerNode 的位置到 (0, 0, 0)
+            // GridNode.transform.position = originalGridNodePosition;
+
+            // RotateNode.transform.position = new Vector3(cameraPosition.x, cameraPosition.y, RotateNode.transform.position.z);
+            // GridNode.transform.position = new Vector3(-cameraPosition.x, -cameraPosition.y, GridNode.transform.position.z);
             // Camera.main.GetComponent<Cemara>().enabled  = true;
 
         }
@@ -138,6 +174,8 @@ public class MapManager : MonoBehaviour
                 return false;
             }
         }
+        return true;
+    
     }
 
     void Rotate180Degrees()
@@ -216,10 +254,10 @@ public class MapManager : MonoBehaviour
         ((CustomTile)newTile).gameObjectToPlace = tilePrefab; // 设置你的GameObject
         // mapSize = blockmap.
         mapSize = blockMap.cellBounds.size;
-        for (int x = (int)-mapSize.x; x < mapSize.x; x++)
-        {
-            for (int y = (int)-mapSize.y; y < mapSize.y ; y++)
-            {
+        BoundsInt blockMapBounds = blockMap.cellBounds;
+        for (int x = blockMapBounds.x; x < blockMapBounds.x + blockMapBounds.size.x; x++) {
+            for (int y = blockMapBounds.y; y < blockMapBounds.y + blockMapBounds.size.y; y++) {
+
                 if (!tilemap.HasTile(new Vector3Int(x, y, 0))){
                     Vector3Int position = new Vector3Int(x, y, 0);
                     
@@ -247,10 +285,6 @@ public class MapManager : MonoBehaviour
                     // 转换边界到瓦片地图坐标
                     Vector3Int min = nonemap.WorldToCell(bounds.min);
                     Vector3Int max = nonemap.WorldToCell(bounds.max);
-                    Debug.Log("bounds 1 " + bounds.min);
-                    Debug.Log("bounds 2 " + bounds.max);
-                    Debug.Log("bounds min " + min );
-                    Debug.Log("bounds max " + max );
                     // 遍历区域内的所有瓦片
                     for (int x = min.x -1; x <= max.x+1; x++)
                     {
@@ -270,7 +304,6 @@ public class MapManager : MonoBehaviour
                                     // if (otherCollider == collider2D) // 排除自身
                                     {
                                         //tileGameObject = nonemap.GetInstantiatedObject(position);
-                                        Debug.Log(tileGameObject.name);
 
                                         if (tileGameObject != null)
                                         {

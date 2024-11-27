@@ -19,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
     public GameObject playNode;
 
     public enum MovementState { idle, running, jumping, falling }
-
+    public int mapState = 0;
     [SerializeField] private AudioSource jumpSoundEffect;
 
     public MovementState playerState;
@@ -38,6 +38,7 @@ public class PlayerMovement : MonoBehaviour
         rb.bodyType = RigidbodyType2D.Static;
         if (!playNode.transform.GetComponent<SpriteRenderer>().flipY)
         {
+            
             // 获取角色的脚底位置
             Vector3 pivotPoint = new Vector3(transform.position.x, transform.position.y, transform.position.z); // 获取脚底位置
             // 翻转 SpriteRenderer 的 Y 轴
@@ -45,6 +46,7 @@ public class PlayerMovement : MonoBehaviour
             playNode.transform.localPosition = new Vector3(playNode.transform.localPosition.x, playNode.transform.localPosition.y - 1f, playNode.transform.localPosition.z);
             // 绕脚底位置旋转 180 度
             // transform.RotateAround(pivotPoint, Vector3.forward, 180f);
+            // Camera.main.transform.RotateAround(pivotPoint, Vector3.forward, 180f); // 旋转相机
         }
         else
         {
@@ -55,6 +57,7 @@ public class PlayerMovement : MonoBehaviour
             playNode.transform.GetComponent<SpriteRenderer>().flipY = !playNode.transform.GetComponent<SpriteRenderer>().flipY;
             // playNode.transform.position = playNode.transform.position + new Vector3(0, 0.5f, 0);
             playNode.transform.localPosition = new Vector3(playNode.transform.localPosition.x, playNode.transform.localPosition.y + 1f, playNode.transform.localPosition.z);
+            // Camera.main.transform.RotateAround(pivotPoint, Vector3.forward, 0); // 旋转相机
 
             // 绕脚底位置旋转 180 度
             // transform.RotateAround(pivotPoint, Vector3.forward, 0);
@@ -102,12 +105,20 @@ public class PlayerMovement : MonoBehaviour
         if (dirX > 0f)
         {
             state = MovementState.running;
-            sprite.flipX = false;
+            if (!playNode.transform.GetComponent<SpriteRenderer>().flipY){
+                sprite.flipX = false;
+            }else{
+                sprite.flipX = true;
+            }
         }
         else if (dirX < 0f)
         {
             state = MovementState.running;
-            sprite.flipX = true;
+            if (!playNode.transform.GetComponent<SpriteRenderer>().flipY){
+                sprite.flipX = true;
+            }else{
+                sprite.flipX = false;
+            }
         }
         else
         {
@@ -147,13 +158,14 @@ public class PlayerMovement : MonoBehaviour
         return hit1.collider != null && hit2.collider != null;
     }
 
-    bool CheckCanChangeState(){
-        if (!IsGrounded() && playerState == MovementState.jumping){
-            return false;
-        }
-        else{
-            
-        }
+    public bool CheckCanChangeState(){
+        return true;
+        // if (!IsGrounded()){
+        //     return false;
+        // }
+        // else{
+        //     return true;
+        // }
     }
 
     // void OnCollisionEnter2D(Collision2D collision)
