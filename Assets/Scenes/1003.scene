@@ -357,7 +357,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 8
+  orthographic size: 25
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -5271,6 +5271,7 @@ MonoBehaviour:
   PlayerNode: {fileID: 1498733021}
   boxList: []
   tilePrefab: {fileID: 3390491133744403106, guid: 5a84011d45e18c446b19f0dbade76869, type: 3}
+  RotateNode: {fileID: 0}
   newTile: {fileID: 11400000, guid: cbb3e26ad030b5543bef24eccc69b91d, type: 2}
   rotationDuration: 1
   angle: 180
