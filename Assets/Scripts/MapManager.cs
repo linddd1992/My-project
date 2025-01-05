@@ -111,6 +111,7 @@ public class MapManager : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0) && CheckCanChangeState())
         {
+            GetPlayerTranfotm();
             // Camera.main.GetComponent<Cemara>().enabled  = false;
             nonemap.gameObject.SetActive(!nonemap.isActiveAndEnabled);
             tilemap.gameObject.SetActive(!tilemap.isActiveAndEnabled);
@@ -142,7 +143,7 @@ public class MapManager : MonoBehaviour
 
             // 确定旋转的角度
             float rotationAngle = 180f; // 或者其他角度
-            Debug.Log("centerPoint : " + centerPoint);
+            //Debug.Log("centerPoint : " + centerPoint);
             // 进行旋转
             GridNode.transform.RotateAround(centerPoint, Vector3.forward, rotationAngle);
             GridNode.transform.position = Vector3.zero;
@@ -168,13 +169,14 @@ public class MapManager : MonoBehaviour
     }
 
     bool CheckCanChangeState(){
-        if(Player){
-            if (!Player.CheckCanChangeState())
-            {
-                return false;
-            }
-        }
         return true;
+        // if(Player){
+        //     if (!Player.CheckCanChangeState())
+        //     {
+        //         return false;
+        //     }
+        // }
+        // return true;
     
     }
 
@@ -460,6 +462,15 @@ public class MapManager : MonoBehaviour
 
     public void OpenPassView(){
         UIManager.Instance.OpenWindow("PassView");
+    }
+
+    public Vector3Int GetPlayerTranfotm()
+    {
+        Vector3 pos = Player.transform.position;
+        var TilePos = tilemap.WorldToCell(pos);
+        Debug.Log( TilePos.ToString() );
+        Debug.Log("pos" + pos.ToString() );
+        return TilePos;
     }
 }
 

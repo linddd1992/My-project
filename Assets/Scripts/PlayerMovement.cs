@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -23,6 +24,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AudioSource jumpSoundEffect;
 
     public MovementState playerState;
+    public BoxCollider2D canChangeColl ;
+
+    public Tilemap tilemap;
+
     // Start is called before the first frame update    
     private void Start()
     {
@@ -35,6 +40,9 @@ public class PlayerMovement : MonoBehaviour
 
     public void onChangeState()
     {
+        // CheckCanChangeState();
+        CheckBelowTilemap();
+        // Debug.Log("CheckCanChangeState",);
         rb.bodyType = RigidbodyType2D.Static;
         if (!playNode.transform.GetComponent<SpriteRenderer>().flipY)
         {
@@ -47,6 +55,9 @@ public class PlayerMovement : MonoBehaviour
             // 绕脚底位置旋转 180 度
             // transform.RotateAround(pivotPoint, Vector3.forward, 180f);
             // Camera.main.transform.RotateAround(pivotPoint, Vector3.forward, 180f); // 旋转相机
+            canChangeColl.transform.localRotation = Quaternion.Euler(0, 0, 180f);
+
+
         }
         else
         {
@@ -58,6 +69,8 @@ public class PlayerMovement : MonoBehaviour
             // playNode.transform.position = playNode.transform.position + new Vector3(0, 0.5f, 0);
             playNode.transform.localPosition = new Vector3(playNode.transform.localPosition.x, playNode.transform.localPosition.y + 1f, playNode.transform.localPosition.z);
             // Camera.main.transform.RotateAround(pivotPoint, Vector3.forward, 0); // 旋转相机
+            canChangeColl.transform.localRotation = Quaternion.Euler(0, 0, 0);
+
 
             // 绕脚底位置旋转 180 度
             // transform.RotateAround(pivotPoint, Vector3.forward, 0);
@@ -79,11 +92,12 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetButtonDown("Jump")){
             if(IsGrounded())
             {
+                Debug.Log("jump");
                 rb.velocity = new Vector2(rb.velocity.x,  jumpForce);
             }
         }
 
-
+        CheckBelowTilemap();
         UpdateAnimationState();
     }
 
@@ -159,15 +173,93 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public bool CheckCanChangeState(){
-        return true;
-        // if (!IsGrounded()){
-        //     return false;
-        // }
-        // else{
-        //     return true;
-        // }
+        // 获取 BoxCollider2D 的边界
+        Bounds bounds = canChangeColl.bounds;
+
+        // 调整检测参数
+        Vector2 detectionSize = new Vector2(bounds.size.x * 0.8f, 0.3f); // 宽度缩小20%，高度增加
+        float detectionDistance = 0.3f; // 增加检测距离
+
+        // 检测下方碰撞
+        RaycastHit2D hitBottom = Physics2D.BoxCast(
+            bounds.center, 
+            detectionSize, 
+            0f, 
+            Vector2.down, 
+            detectionDistance, 
+            jumpableGround);
+
+        // 绘制完整的检测区域
+        Vector2 boxCenter = bounds.center + Vector3.down * (detectionDistance/2);
+        Debug.DrawLine(
+            boxCenter + new Vector2(-detectionSize.x/2, -detectionSize.y/2),
+            boxCenter + new Vector2(detectionSize.x/2, -detectionSize.y/2), 
+            Color.red, 
+            1f);
+        Debug.DrawLine(
+            boxCenter + new Vector2(-detectionSize.x/2, detectionSize.y/2),
+            boxCenter + new Vector2(detectionSize.x/2, detectionSize.y/2), 
+            Color.green, 
+            1f);
+
+        // 如果没有下方碰撞则返回true
+        if (hitBottom.collider == null)
+        {
+            Debug.LogWarning($"Can change state - no collision below (检测区域: {detectionSize}, 距离: {detectionDistance})");
+            return true;
+        }
+        
+        Debug.LogWarning($"Cannot change state - collision with {hitBottom.collider.name} at {hitBottom.point}");
+        return false;
     }
 
+    private Vector3Int? lastHitCell = null; // 记录上一次碰撞的格子
+    private void CheckBelowTilemap()
+    {
+        Vector2 origin = coll.bounds.center;
+        origin.y = coll.bounds.min.y ; // 从底部发射射线
+
+        // 定义射线的长度
+        float length = 2f; // 可以根据需要调整此值
+
+        // 发射射线
+        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, length, jumpableGround);
+        Debug.DrawRay(origin, Vector2.down * length, Color.red);
+        // 检测是否碰撞到 Tilemap
+        if (hit.collider != null)
+        {
+            // 获取射线末端的格子坐标
+            Vector3Int cellPosition = tilemap.WorldToCell(hit.point);
+
+            // 判断末端是否是 Tilemap
+            if (tilemap.HasTile(cellPosition))
+            {
+                Debug.Log("Raycast末端是 Tilemap，格子坐标: " + cellPosition);
+                lastHitCell = cellPosition; // 记录当前碰撞的格子
+            }
+            else
+            {
+                Debug.Log("Raycast末端不是 Tilemap");
+            }
+        }
+        else
+        {
+            Debug.Log("Raycast未碰撞到 Tilemap");
+        }
+    }
+private void OnDrawGizmos()
+    {
+        if (lastHitCell.HasValue)
+        {
+            // 获取格子的世界坐标中心
+            Vector3 cellCenter = tilemap.GetCellCenterWorld(lastHitCell.Value);
+            Vector3 cellSize = tilemap.cellSize;
+
+            // 绘制格子的线框
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireCube(cellCenter, cellSize);
+        }
+    }
     // void OnCollisionEnter2D(Collision2D collision)
     // {
 
@@ -191,10 +283,3 @@ public class PlayerMovement : MonoBehaviour
     //     }
     // }
 }
-
-
-
-
-
-
-
