@@ -85,7 +85,7 @@ public class MapManager : Singleton<MapManager>
         if(GameObject.Find("Player")){
             Player = GameObject.Find("Player").GetComponent<PlayerMovement>();
         }
-        initNoneMap();
+        // initNoneMap();
         
     }
     
@@ -100,7 +100,7 @@ public class MapManager : Singleton<MapManager>
             RotateNode = GameObject.Find("GridNode");
         }
             // 将目标节点的位置设置为摄像机的位置
-
+        Debug.Log("CheckCanChangeState" + CheckCanChangeState());
         if (Input.GetMouseButtonDown(0) && CheckCanChangeState())
         {
             GetPlayerTranfotm();
@@ -238,7 +238,6 @@ public class MapManager : Singleton<MapManager>
 
                 if (!tilemap.HasTile(new Vector3Int(x, y, 0))){
                     Vector3Int position = new Vector3Int(x, y, 0);
-                    
                     nonemap.SetTile(position, newTile); // 将Tile设置到Tilemap的指定位置
                 }
             }
@@ -254,7 +253,7 @@ public class MapManager : Singleton<MapManager>
         CurrentState = newState;
         OnStateChanged?.Invoke(newState);
         
-        if (CurrentState == MapState.Night)
+        if (CurrentState == MapState.Normal)
         {
             for (int i = 0; i < boxList.Count; i++)
             {
