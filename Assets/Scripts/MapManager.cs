@@ -15,8 +15,16 @@ struct HideCollider
     public Vector3Int tilePos;
     public Vector3 position;
 }
-public class MapManager : MonoBehaviour
+public enum MapState
 {
+    Normal,
+    Night
+}
+
+public class MapManager : Singleton<MapManager>
+{
+    public event Action<MapState> OnStateChanged;
+    public MapState CurrentState { get; private set; } = MapState.Normal;
     public Tilemap tilemap;
     public Tilemap nonemap;
     public Tilemap thingMap;
@@ -84,23 +92,7 @@ public class MapManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //if (Input.GetMouseButtonDown(0))
-        //{
-        //    HideCurrentTilesAndGenerateEmpty();
-        //    //做一个动画GridNode旋转180度
 
-        //    //box.constraints.
-        //    Player.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Kinematic;
-        //    //StartCoroutine(RotateNodeAroundCenter(angle));
-        //    Quaternion rotationDifference = Quaternion.Euler(0, 0, 180); // 定义旋转180度
-        //    Quaternion originalRotation = transform.localRotation;
-        //    Quaternion newRotation = rotationDifference * originalRotation;
-        //    nonemap.transform.localRotation = newRotation;
-        //    // GridNode.transform.Rotate(new Vector3(0, 0, 180));
-        //    nonemap.gameObject.SetActive(!nonemap.isActiveAndEnabled);
-        //    tilemap.gameObject.SetActive(!tilemap.isActiveAndEnabled);
-        //    box.GetComponent<box>().onChangeState();
-        //}
         if (GameManager.Instance.CurrentState != GameManager.GameState.Playing){
             return;
         }
@@ -147,36 +139,20 @@ public class MapManager : MonoBehaviour
             // 进行旋转
             GridNode.transform.RotateAround(centerPoint, Vector3.forward, rotationAngle);
             GridNode.transform.position = Vector3.zero;
-            // PlayerNode.transform.RotateAround(centerPoint, Vector3.forward, rotationAngle);
-            // if(GridNode.transform.rotation.z == 0){
-            //     GridNode.transform.rotation = Quaternion.Euler(0, 0, 180);
 
-            // }else{
-            //     GridNode.transform.rotation = Quaternion.Euler(0, 0, 0);
-
-
-            // }
-            // Vector3 cameraPosition = Camera.main.transform.position;
-            // GridNode.transform.position = cameraPosition + new Vector3(0, 0, 0); 
-            // 恢复 GridNode 和 PlayerNode 的位置到 (0, 0, 0)
-            // GridNode.transform.position = originalGridNodePosition;
-
-            // RotateNode.transform.position = new Vector3(cameraPosition.x, cameraPosition.y, RotateNode.transform.position.z);
-            // GridNode.transform.position = new Vector3(-cameraPosition.x, -cameraPosition.y, GridNode.transform.position.z);
-            // Camera.main.GetComponent<Cemara>().enabled  = true;
 
         }
+
     }
 
     bool CheckCanChangeState(){
+        if(Player){
+            if (!Player.CheckCanChangeState() || !Player.IsGrounded())
+            {
+                return false;
+            }
+        }
         return true;
-        // if(Player){
-        //     if (!Player.CheckCanChangeState())
-        //     {
-        //         return false;
-        //     }
-        // }
-        // return true;
     
     }
 
@@ -274,8 +250,11 @@ public class MapManager : MonoBehaviour
 
     public void onChangeState()
     {
-        // nonemap.GetComponent<TilemapCollider2D>().hasTilemapChanges = true;
-        if (nonemap.isActiveAndEnabled)
+        var newState = CurrentState == MapState.Normal ? MapState.Night : MapState.Normal;
+        CurrentState = newState;
+        OnStateChanged?.Invoke(newState);
+        
+        if (CurrentState == MapState.Night)
         {
             for (int i = 0; i < boxList.Count; i++)
             {
@@ -473,4 +452,3 @@ public class MapManager : MonoBehaviour
         return TilePos;
     }
 }
-

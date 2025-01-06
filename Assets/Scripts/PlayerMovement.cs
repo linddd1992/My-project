@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using static PlayerMovement;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -20,13 +21,13 @@ public class PlayerMovement : MonoBehaviour
     public GameObject playNode;
 
     public enum MovementState { idle, running, jumping, falling }
-    public int mapState = 0;
     [SerializeField] private AudioSource jumpSoundEffect;
 
     public MovementState playerState;
     public BoxCollider2D canChangeColl ;
 
     public Tilemap tilemap;
+    public Tilemap nonemap; // 添加nonemap引用
 
     // Start is called before the first frame update    
     private void Start()
@@ -35,18 +36,13 @@ public class PlayerMovement : MonoBehaviour
         coll = playNode.GetComponent<BoxCollider2D>();
         sprite = playNode.GetComponent<SpriteRenderer>();
         anim = playNode.GetComponent<Animator>();
-
     }
 
     public void onChangeState()
     {
-        // CheckCanChangeState();
-        CheckBelowTilemap();
-        // Debug.Log("CheckCanChangeState",);
         rb.bodyType = RigidbodyType2D.Static;
         if (!playNode.transform.GetComponent<SpriteRenderer>().flipY)
         {
-            
             // 获取角色的脚底位置
             Vector3 pivotPoint = new Vector3(transform.position.x, transform.position.y, transform.position.z); // 获取脚底位置
             // 翻转 SpriteRenderer 的 Y 轴
@@ -97,19 +93,32 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        CheckBelowTilemap();
         UpdateAnimationState();
     }
 
     //判断是否在箱子隔壁
     private bool IsNeerBox(float dirX){
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.right, 0.5f, BoxGround);
+        Vector2 size = new Vector2(0.1f, coll.bounds.size.y * 0.8f); // 检测区域大小
+        float distance = 0.5f; // 检测距离
+        
         if(dirX > 0f){
-             hit =  Physics2D.Raycast(transform.position, Vector2.right, 0.5f, BoxGround);
+            return Physics2D.BoxCast(
+                transform.position, 
+                size, 
+                0f, 
+                Vector2.right, 
+                distance, 
+                BoxGround);
         }else if(dirX < 0f){
-             hit =  Physics2D.Raycast(transform.position, Vector2.left, 0.5f, BoxGround);
+            return Physics2D.BoxCast(
+                transform.position, 
+                size, 
+                0f, 
+                Vector2.left, 
+                distance, 
+                BoxGround);
         }
-        return hit.collider != null;
+        return false;
     }
 
     private void UpdateAnimationState()
@@ -156,7 +165,7 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
-    private bool IsGrounded()
+    public bool IsGrounded()
     {
         // return Physics2D.BoxCast(coll.bounds.center, coll.bounds.size, 0f, Vector2.down, .1f, jumpableGround);
             // 定义 Raycast 的起始点
@@ -172,94 +181,76 @@ public class PlayerMovement : MonoBehaviour
         return hit1.collider != null && hit2.collider != null;
     }
 
-    public bool CheckCanChangeState(){
-        // 获取 BoxCollider2D 的边界
-        Bounds bounds = canChangeColl.bounds;
+private void OnDrawGizmos()
+    {
 
-        // 调整检测参数
-        Vector2 detectionSize = new Vector2(bounds.size.x * 0.8f, 0.3f); // 宽度缩小20%，高度增加
-        float detectionDistance = 0.3f; // 增加检测距离
-
-        // 检测下方碰撞
-        RaycastHit2D hitBottom = Physics2D.BoxCast(
-            bounds.center, 
-            detectionSize, 
-            0f, 
-            Vector2.down, 
-            detectionDistance, 
-            jumpableGround);
-
-        // 绘制完整的检测区域
-        Vector2 boxCenter = bounds.center + Vector3.down * (detectionDistance/2);
-        Debug.DrawLine(
-            boxCenter + new Vector2(-detectionSize.x/2, -detectionSize.y/2),
-            boxCenter + new Vector2(detectionSize.x/2, -detectionSize.y/2), 
-            Color.red, 
-            1f);
-        Debug.DrawLine(
-            boxCenter + new Vector2(-detectionSize.x/2, detectionSize.y/2),
-            boxCenter + new Vector2(detectionSize.x/2, detectionSize.y/2), 
-            Color.green, 
-            1f);
-
-        // 如果没有下方碰撞则返回true
-        if (hitBottom.collider == null)
-        {
-            Debug.LogWarning($"Can change state - no collision below (检测区域: {detectionSize}, 距离: {detectionDistance})");
-            return true;
-        }
+        // 根据mapState选择使用哪个Tilemap
+        Tilemap currentMap = MapManager.Instance.CurrentState == MapState.Night ? nonemap : tilemap;
         
-        Debug.LogWarning($"Cannot change state - collision with {hitBottom.collider.name} at {hitBottom.point}");
+        // 绘制玩家当前位置的格子
+        if (currentMap != null)
+        {
+            // 将玩家位置转换为格子坐标
+            Vector3Int playerCell = tilemap.WorldToCell(transform.position);
+            
+            // 获取玩家下方一格和两格的坐标
+            Vector3Int belowCell1 = new Vector3Int(playerCell.x, playerCell.y - 1, playerCell.z);
+            Vector3Int belowCell2 = new Vector3Int(playerCell.x, playerCell.y - 2, playerCell.z);
+            
+            if( MapManager.Instance.CurrentState == MapState.Night)
+            {
+                 belowCell1 = new Vector3Int(playerCell.x, playerCell.y + 1, playerCell.z);
+                 belowCell2 = new Vector3Int(playerCell.x, playerCell.y + 2, playerCell.z);   
+            }
+
+            // 检查玩家下方两格是否都有Tile
+            if (currentMap.HasTile(belowCell1) && currentMap.HasTile(belowCell2))
+            {
+                // 绘制玩家自己的格子
+                Vector3 playerCellCenter = currentMap.GetCellCenterWorld(playerCell);
+                Vector3 cellSize = currentMap.cellSize;
+                
+                Gizmos.color = Color.red;
+                Gizmos.DrawWireCube(playerCellCenter, cellSize);
+                // return true;
+            }
+            
+        }
+        // return true;
+    }
+
+    public bool CheckCanChangeState()
+    {
+        Tilemap currentMap = MapManager.Instance.CurrentState == MapState.Night ? nonemap : tilemap;
+        
+        // 绘制玩家当前位置的格子
+        if (currentMap != null)
+        {
+            // 将玩家位置转换为格子坐标
+            Vector3Int playerCell = tilemap.WorldToCell(transform.position);
+            
+            // 获取玩家下方一格和两格的坐标
+            Vector3Int belowCell1 = new Vector3Int(playerCell.x, playerCell.y - 1, playerCell.z);
+            Vector3Int belowCell2 = new Vector3Int(playerCell.x, playerCell.y - 2, playerCell.z);
+            
+            if(MapManager.Instance.CurrentState == MapState.Night)
+            {
+                 belowCell1 = new Vector3Int(playerCell.x, playerCell.y + 1, playerCell.z);
+                 belowCell2 = new Vector3Int(playerCell.x, playerCell.y + 2, playerCell.z);   
+            }
+
+            // 检查玩家下方两格是否都有Tile
+            if (currentMap.HasTile(belowCell1) && currentMap.HasTile(belowCell2))
+            {
+                // 绘制玩家自己的格子
+                return true;
+            }
+            
+        }
         return false;
     }
 
-    private Vector3Int? lastHitCell = null; // 记录上一次碰撞的格子
-    private void CheckBelowTilemap()
-    {
-        Vector2 origin = coll.bounds.center;
-        origin.y = coll.bounds.min.y ; // 从底部发射射线
 
-        // 定义射线的长度
-        float length = 2f; // 可以根据需要调整此值
-
-        // 发射射线
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, length, jumpableGround);
-        Debug.DrawRay(origin, Vector2.down * length, Color.red);
-        // 检测是否碰撞到 Tilemap
-        if (hit.collider != null)
-        {
-            // 获取射线末端的格子坐标
-            Vector3Int cellPosition = tilemap.WorldToCell(hit.point);
-
-            // 判断末端是否是 Tilemap
-            if (tilemap.HasTile(cellPosition))
-            {
-                Debug.Log("Raycast末端是 Tilemap，格子坐标: " + cellPosition);
-                lastHitCell = cellPosition; // 记录当前碰撞的格子
-            }
-            else
-            {
-                Debug.Log("Raycast末端不是 Tilemap");
-            }
-        }
-        else
-        {
-            Debug.Log("Raycast未碰撞到 Tilemap");
-        }
-    }
-private void OnDrawGizmos()
-    {
-        if (lastHitCell.HasValue)
-        {
-            // 获取格子的世界坐标中心
-            Vector3 cellCenter = tilemap.GetCellCenterWorld(lastHitCell.Value);
-            Vector3 cellSize = tilemap.cellSize;
-
-            // 绘制格子的线框
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireCube(cellCenter, cellSize);
-        }
-    }
     // void OnCollisionEnter2D(Collision2D collision)
     // {
 
