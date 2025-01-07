@@ -18,8 +18,8 @@ public class NonemapGenerator : EditorWindow
         // 自动查找场景中的Tilemap
         var maps = FindObjectsOfType<Tilemap>();
         window.tilemap = maps.FirstOrDefault(m => m.name.Contains("Tilemap"));
-        window.nonemap = maps.FirstOrDefault(m => m.name.Contains("Nonemap"));
-        window.blockMap = maps.FirstOrDefault(m => m.name.Contains("BlockMap"));
+        window.nonemap = maps.FirstOrDefault(m => m.name.Contains("nonemap"));
+        window.blockMap = maps.FirstOrDefault(m => m.name.Contains("blockmap"));
 
         if (window.tilemap == null || window.nonemap == null || window.blockMap == null)
         {
