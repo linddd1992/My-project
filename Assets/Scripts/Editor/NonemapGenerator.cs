@@ -1,18 +1,34 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System.Linq;
 
 public class NonemapGenerator : EditorWindow
 {
     private Tilemap tilemap;
     private Tilemap nonemap;
+    private Tilemap gressmap;
     private GameObject tilePrefab;
     public Tilemap blockMap;
+    public TileBase gressTile;
+    public Vector3 gressTileOffset = Vector3.zero;
 
     [MenuItem("Tools/Generate Nonemap")]
     public static void ShowWindow()
     {
-        GetWindow<NonemapGenerator>("Nonemap Generator");
+        var window = GetWindow<NonemapGenerator>("Nonemap Generator");
+        
+        // 自动查找场景中的Tilemap
+        var maps = FindObjectsOfType<Tilemap>();
+        window.tilemap = maps.FirstOrDefault(m => m.name.Contains("Tilemap"));
+        window.nonemap = maps.FirstOrDefault(m => m.name.Contains("nonemap"));
+        window.blockMap = maps.FirstOrDefault(m => m.name.Contains("blockmap"));
+        window.gressmap = maps.FirstOrDefault(m => m.name.Contains("gressmap"));
+
+        if (window.tilemap == null || window.nonemap == null || window.blockMap == null)
+        {
+            Debug.LogWarning("未能自动找到所有需要的Tilemap，请手动指定");
+        }
     }
 
     private void OnGUI()
@@ -21,8 +37,11 @@ public class NonemapGenerator : EditorWindow
 
         tilemap = (Tilemap)EditorGUILayout.ObjectField("Tilemap", tilemap, typeof(Tilemap), true);
         nonemap = (Tilemap)EditorGUILayout.ObjectField("Nonemap", nonemap, typeof(Tilemap), true);
-        blockMap = (Tilemap)EditorGUILayout.ObjectField("Nonemap", blockMap, typeof(Tilemap), true);
+        blockMap = (Tilemap)EditorGUILayout.ObjectField("blockMap", blockMap, typeof(Tilemap), true);
+        gressmap = (Tilemap)EditorGUILayout.ObjectField("gressmap", gressmap, typeof(Tilemap), true);
         tilePrefab = (GameObject)EditorGUILayout.ObjectField("None Tile", tilePrefab, typeof(GameObject), false);
+        gressTile = (TileBase)EditorGUILayout.ObjectField("Gress Tile", gressTile, typeof(TileBase), false);
+        gressTileOffset = EditorGUILayout.Vector3Field("Gress Tile Offset", gressTileOffset);
 
         if (GUILayout.Button("Generate Nonemap"))
         {
@@ -31,6 +50,57 @@ public class NonemapGenerator : EditorWindow
         if (GUILayout.Button("clearmap"))
         {
              nonemap.ClearAllTiles();
+        }
+
+        if (GUILayout.Button("Rotate GridNodes 180°"))
+        {
+            RotateGridNodes();
+        }
+
+        if (GUILayout.Button("Check Above and Draw Gress"))
+        {
+            CheckAboveAndDrawGress();
+        }
+    }
+
+    private void RotateGridNodes()
+    {
+        var gridNodes = FindObjectsOfType<Transform>()
+            .Where(t => t.name.Contains("GridNode"))
+            .ToList();
+
+        foreach (var node in gridNodes)
+        {
+            Undo.RecordObject(node, "Rotate GridNode");
+            node.Rotate(0, 0, 180);
+            EditorUtility.SetDirty(node);
+        }
+
+        Debug.Log($"Rotated {gridNodes.Count} GridNodes");
+    }
+
+    private void CheckAboveAndDrawGress()
+    {
+        if (tilemap == null || gressmap == null || gressTile == null)
+        {
+            Debug.LogError("Please assign all required references");
+            return;
+        }
+        
+        BoundsInt bounds = tilemap.cellBounds;
+        for (int x = bounds.x; x < bounds.x + bounds.size.x; x++)
+        {
+            for (int y = bounds.y; y < bounds.y + bounds.size.y; y++)
+            {
+                Vector3Int currentPos = new Vector3Int(x, y, 0);
+                Vector3Int abovePos = new Vector3Int(x, y + 1, 0);
+
+                if (tilemap.HasTile(currentPos) && !tilemap.HasTile(abovePos))
+                {
+                    gressmap.SetTile(abovePos, gressTile);
+                    gressmap.SetTransformMatrix(abovePos, Matrix4x4.TRS(gressTileOffset, Quaternion.identity, Vector3.one));
+                }
+            }
         }
     }
 
