@@ -7,7 +7,7 @@ using static PlayerMovement;
 public class PlayerMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
-    private BoxCollider2D coll;
+    private CapsuleCollider2D coll;
     private SpriteRenderer sprite;
     private Animator anim;
     private bool isOnGround = false;
@@ -33,9 +33,11 @@ public class PlayerMovement : MonoBehaviour
     private void Start()
     {
         rb = playNode.GetComponent<Rigidbody2D>();
-        coll = playNode.GetComponent<BoxCollider2D>();
+        coll = playNode.GetComponent<CapsuleCollider2D>();
         sprite = playNode.GetComponent<SpriteRenderer>();
         anim = playNode.GetComponent<Animator>();
+        tilemap = MapManager.Instance.tilemap;
+        nonemap = MapManager.Instance.nonemap;
     }
 
     public void onChangeState()
@@ -253,24 +255,26 @@ private void OnDrawGizmos()
 
     // void OnCollisionEnter2D(Collision2D collision)
     // {
+    void OnCollisionEnter2D(Collision2D collision)
+    {
 
-    //     if (collision.gameObject.CompareTag("box")) // 假设道具标记为 "Prop"
-    //     {
+        if (collision.gameObject.CompareTag("box")) // 假设道具标记为 "Prop"
+        {
 
-    //         Rigidbody2D propRigidbody = collision.gameObject.GetComponent<Rigidbody2D>();
-    //         if (propRigidbody!= null)
-    //         {
+            // Rigidbody2D propRigidbody = collision.gameObject.GetComponent<Rigidbody2D>();
+            // if (propRigidbody!= null)
+            // {
 
-    //             // 根据玩家的移动方向施加力
-    //             if (rb.velocity.x > 0)
-    //             {
-    //                 propRigidbody.AddForce(new Vector2(rb.velocity.x * moveSpeed, 0));
-    //             }
-    //             else if (rb.velocity.x < 0)
-    //             {
-    //                 propRigidbody.AddForce(new Vector2(-rb.velocity.x * moveSpeed, 0));
-    //             }
-    //         }
-    //     }
-    // }
+            //     // 根据玩家的移动方向施加力
+            //     if (rb.velocity.x > 0)
+            //     {
+            //         propRigidbody.AddForce(new Vector2(rb.velocity.x * moveSpeed, 0));
+            //     }
+            //     else if (rb.velocity.x < 0)
+            //     {
+            //         propRigidbody.AddForce(new Vector2(-rb.velocity.x * moveSpeed, 0));
+            //     }
+            // }
+        }
+    }
 }

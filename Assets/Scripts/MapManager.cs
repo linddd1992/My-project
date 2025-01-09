@@ -52,6 +52,9 @@ public class MapManager : Singleton<MapManager>
 
         // tilemap.cellBounds = new BoundsInt(new Vector3Int(0, 0, 0), new Vector3Int(10, 10, 0)); 
     }
+
+    
+
     void Start()
     {
         //onChangeState();
