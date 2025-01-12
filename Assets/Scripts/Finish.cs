@@ -61,11 +61,11 @@ public class Finish : MonoBehaviour
     }
 
     private bool IsInNonemap() {
-        if (MapManager.Instance == null || MapManager.Instance.nonemap == null) {
+        if (MapManager.Instance == null || MapManager.Instance.nightMap == null) {
             return false;
         }
-        Vector3Int cellPos = MapManager.Instance.nonemap.WorldToCell(transform.position);
-        return MapManager.Instance.nonemap.HasTile(cellPos);
+        Vector3Int cellPos = MapManager.Instance.nightMap.WorldToCell(transform.position);
+        return MapManager.Instance.nightMap.HasTile(cellPos);
     }
 
     private bool IsInTilemap() {

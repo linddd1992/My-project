@@ -24,7 +24,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AudioSource jumpSoundEffect;
 
     public MovementState playerState;
-    public BoxCollider2D canChangeColl ;
 
     public Tilemap tilemap;
     public Tilemap nonemap; // 添加nonemap引用
@@ -37,7 +36,7 @@ public class PlayerMovement : MonoBehaviour
         sprite = playNode.GetComponent<SpriteRenderer>();
         anim = playNode.GetComponent<Animator>();
         tilemap = MapManager.Instance.tilemap;
-        nonemap = MapManager.Instance.nonemap;
+        nonemap = MapManager.Instance.nightMap;
     }
 
     public void onChangeState()
@@ -53,7 +52,7 @@ public class PlayerMovement : MonoBehaviour
             // 绕脚底位置旋转 180 度
             // transform.RotateAround(pivotPoint, Vector3.forward, 180f);
             // Camera.main.transform.RotateAround(pivotPoint, Vector3.forward, 180f); // 旋转相机
-            canChangeColl.transform.localRotation = Quaternion.Euler(0, 0, 180f);
+            // playNode.transform.localRotation = Quaternion.Euler(0, 0, 180f);
 
 
         }
@@ -67,7 +66,7 @@ public class PlayerMovement : MonoBehaviour
             // playNode.transform.position = playNode.transform.position + new Vector3(0, 0.5f, 0);
             playNode.transform.localPosition = new Vector3(playNode.transform.localPosition.x, playNode.transform.localPosition.y + 1f, playNode.transform.localPosition.z);
             // Camera.main.transform.RotateAround(pivotPoint, Vector3.forward, 0); // 旋转相机
-            canChangeColl.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            // playNode.transform.localRotation = Quaternion.Euler(0, 0, 0);
 
 
             // 绕脚底位置旋转 180 度

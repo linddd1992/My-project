@@ -54,6 +54,7 @@ SpriteRenderer:
   m_RayTraceProcedural: 0
   m_virtualGeometry: 0
   m_virtualGeometryShadow: 0
+  m_ShadingRate: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:

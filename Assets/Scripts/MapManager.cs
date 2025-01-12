@@ -26,10 +26,14 @@ public class MapManager : Singleton<MapManager>
     public event Action<MapState> OnStateChanged;
     public MapState CurrentState { get; private set; } = MapState.Normal;
     public Tilemap tilemap;
-    public Tilemap nonemap;
+    public Tilemap nightMap;
     public Tilemap thingMap;
     public Tilemap tmpMap;
     public Tilemap blockMap;
+    public Tilemap gressmap;
+    public Tilemap nightgressmap;
+    public TileBase gressTile;
+    public TileBase nightgressTile;
     public PlayerMovement Player;
     public GameObject PlayerNode;
     public List<Rigidbody2D> boxList = new List<Rigidbody2D>();
@@ -48,8 +52,6 @@ public class MapManager : Singleton<MapManager>
 
     void Awake()
     {
-        hideColliderList = new List<HideCollider>();
-
         // tilemap.cellBounds = new BoundsInt(new Vector3Int(0, 0, 0), new Vector3Int(10, 10, 0)); 
     }
 
@@ -62,7 +64,16 @@ public class MapManager : Singleton<MapManager>
     }
     
     void OnNewScene(){
-        blockMap = GameObject.Find("blockmap").GetComponent<Tilemap>();
+        hideColliderList = new List<HideCollider>();
+
+        blockMap = GameObject.Find("blockMap").GetComponent<Tilemap>();
+        nightMap = GameObject.Find("nightMap").GetComponent<Tilemap>();
+        gressmap = GameObject.Find("gressMap").GetComponent<Tilemap>();
+        nightgressmap = GameObject.Find("nightGressMap").GetComponent<Tilemap>();
+        gressTile = Resources.Load<TileBase>("res/gress/grass5");
+        nightgressTile = Resources.Load<TileBase>("res/gress/grass5-night");
+        nightMap.gameObject.SetActive(false);
+
         // if(GameObject.Find("box")){
         //     box = GameObject.Find("box").GetComponent<Rigidbody2D>();
         // }
@@ -103,12 +114,11 @@ public class MapManager : Singleton<MapManager>
             RotateNode = GameObject.Find("GridNode");
         }
             // 将目标节点的位置设置为摄像机的位置
-        Debug.Log("CheckCanChangeState" + CheckCanChangeState());
         if (Input.GetMouseButtonDown(0) && CheckCanChangeState())
         {
             GetPlayerTranfotm();
             // Camera.main.GetComponent<Cemara>().enabled  = false;
-            nonemap.gameObject.SetActive(!nonemap.isActiveAndEnabled);
+            nightMap.gameObject.SetActive(!nightMap.isActiveAndEnabled);
             tilemap.gameObject.SetActive(!tilemap.isActiveAndEnabled);
             //box.GetComponent<box>().onChangeState();
             // 计算旋转
@@ -143,7 +153,7 @@ public class MapManager : Singleton<MapManager>
             GridNode.transform.RotateAround(centerPoint, Vector3.forward, rotationAngle);
             GridNode.transform.position = Vector3.zero;
 
-
+            CheckAboveNonemapAndDrawGress();
         }
 
     }
@@ -152,6 +162,8 @@ public class MapManager : Singleton<MapManager>
         if(Player){
             if (!Player.CheckCanChangeState() || !Player.IsGrounded())
             {
+                Debug.Log("Can't change state 1" + Player.CheckCanChangeState());
+                Debug.Log("Can't change state 2" +Player.IsGrounded());
                 return false;
             }
         }
@@ -230,7 +242,7 @@ public class MapManager : Singleton<MapManager>
 
 
     void initNoneMap(){
-        nonemap.ClearAllTiles();
+        nightMap.ClearAllTiles();
         newTile = ScriptableObject.CreateInstance<CustomTile>();
         ((CustomTile)newTile).gameObjectToPlace = tilePrefab; // 设置你的GameObject
         // mapSize = blockmap.
@@ -241,11 +253,11 @@ public class MapManager : Singleton<MapManager>
 
                 if (!tilemap.HasTile(new Vector3Int(x, y, 0))){
                     Vector3Int position = new Vector3Int(x, y, 0);
-                    nonemap.SetTile(position, newTile); // 将Tile设置到Tilemap的指定位置
+                    nightMap.SetTile(position, newTile); // 将Tile设置到Tilemap的指定位置
                 }
             }
         }
-        nonemap.gameObject.SetActive(false);
+        nightMap.gameObject.SetActive(false);
     }
 
     
@@ -256,7 +268,7 @@ public class MapManager : Singleton<MapManager>
         CurrentState = newState;
         OnStateChanged?.Invoke(newState);
         
-        if (CurrentState == MapState.Normal)
+        if (CurrentState == MapState.Night)
         {
             for (int i = 0; i < boxList.Count; i++)
             {
@@ -266,20 +278,20 @@ public class MapManager : Singleton<MapManager>
                     var collider2D = box.GetComponent<BoxCollider2D>();
                     Bounds bounds = box.GetComponent<BoxCollider2D>().bounds;
                     // 转换边界到瓦片地图坐标
-                    Vector3Int min = nonemap.WorldToCell(bounds.min);
-                    Vector3Int max = nonemap.WorldToCell(bounds.max);
+                    Vector3Int min = nightMap.WorldToCell(bounds.min);
+                    Vector3Int max = nightMap.WorldToCell(bounds.max);
                     // 遍历区域内的所有瓦片
                     for (int x = min.x -1; x <= max.x+1; x++)
                     {
                         for (int y = min.y-1; y <= max.y+1; y++)
                         {
                             Vector3Int position = new Vector3Int(x, y, 0);
-                            TileBase tile = nonemap.GetTile(position);
+                            TileBase tile = nightMap.GetTile(position);
                             //Debug.Log("position"+position);
 
                             if (tile != null)
                             {
-                                var tileGameObject = nonemap.GetInstantiatedObject(position);
+                                var tileGameObject = nightMap.GetInstantiatedObject(position);
                                 // 检查是否有其他碰撞体接触这个瓦片
                                 // Collider2D[] colliders = Physics2D.OverlapPointAll(nonemap.GetCellCenterWorld(position));
                                 // foreach (var otherCollider in colliders)
@@ -299,12 +311,12 @@ public class MapManager : Singleton<MapManager>
 
                                             if (IsCompletelyInside(collider2D.bounds, tileBounds, box.transform, tileGameObject.transform))
                                             {
-                                                nonemap.SetTile(position, null);
-                                                nonemap.RefreshTile(position);
+                                                nightMap.SetTile(position, null);
+                                                nightMap.RefreshTile(position);
                                                 continue;
                                             }
                                             SetColliderSize(collider2D.bounds, tileBounds, tileGameObject.transform,position);
-                                            nonemap.RefreshTile(position);
+                                            nightMap.RefreshTile(position);
 
                                         }
                                     }
@@ -322,7 +334,7 @@ public class MapManager : Singleton<MapManager>
             foreach (var obj in hideColliderList)
             {
                 if(obj.blockObj == null){
-                    nonemap.SetTile(obj.tilePos, newTile);
+                    nightMap.SetTile(obj.tilePos, newTile);
                 }
             }
             hideColliderList.Clear();
@@ -336,15 +348,15 @@ public class MapManager : Singleton<MapManager>
             tmpMap.ClearAllTiles();
 
         }
-        nonemap.RefreshAllTiles();
+        nightMap.RefreshAllTiles();
         
-        TilemapCollider2D tilemapCollider = nonemap.GetComponent<TilemapCollider2D>();
+        TilemapCollider2D tilemapCollider = nightMap.GetComponent<TilemapCollider2D>();
         if (tilemapCollider != null)
         {
             tilemapCollider.ProcessTilemapChanges();
         }
         
-        CompositeCollider2D compositeCollider = nonemap.GetComponent<CompositeCollider2D>();
+        CompositeCollider2D compositeCollider = nightMap.GetComponent<CompositeCollider2D>();
         if (compositeCollider != null)
         {
             compositeCollider.GenerateGeometry();
@@ -385,8 +397,8 @@ public class MapManager : Singleton<MapManager>
             var localScale = new Vector3(innerTransform.localScale.x - intersectionBounds.size.x, innerTransform.localScale.y, innerTransform.localScale.z);
             if(localScale.x <= 0.05 || localScale.y <= 0.05)
             {
-                nonemap.SetTile(vector3Int, null);
-                nonemap.RefreshTile(vector3Int);
+                nightMap.SetTile(vector3Int, null);
+                nightMap.RefreshTile(vector3Int);
                 return;
             }
             boxScale = localScale;
@@ -403,8 +415,8 @@ public class MapManager : Singleton<MapManager>
 
         GameObject innerObject = GameObject.Instantiate(innerTransform.gameObject);
 
-        nonemap.SetTile(vector3Int, null);
-        nonemap.RefreshTile(vector3Int);
+        nightMap.SetTile(vector3Int, null);
+        nightMap.RefreshTile(vector3Int);
         var collidernewTile = ScriptableObject.CreateInstance<TmpTile>();
         ((TmpTile)collidernewTile).gameObjectToPlace = innerObject; // 设置你的GameObject
         tmpMap.SetTile(vector3Int, collidernewTile); // 将Tile设置到Tilemap的指定位置
@@ -445,12 +457,41 @@ public class MapManager : Singleton<MapManager>
         UIManager.Instance.OpenWindow("PassView");
     }
 
+    /// <summary>
+    /// 清空nightMap指定坐标的格子
+    /// </summary>
+    /// <param name="position">要清空的格子坐标</param>
+    public void ClearNightMapTile(Vector3Int position)
+    {
+        nightMap.SetTile(position, null);
+        nightMap.RefreshTile(position);
+    }
+
     public Vector3Int GetPlayerTranfotm()
     {
         Vector3 pos = Player.transform.position;
         var TilePos = tilemap.WorldToCell(pos);
         Debug.Log( TilePos.ToString() );
-        Debug.Log("pos" + pos.ToString() );
         return TilePos;
+    }
+
+    private void CheckAboveNonemapAndDrawGress()
+    {
+        nightgressmap.ClearAllTiles();
+        BoundsInt bounds = nightMap.cellBounds;
+        for (int x = bounds.x; x < bounds.x + bounds.size.x; x++)
+        {
+            for (int y = bounds.y; y < bounds.y + bounds.size.y; y++)
+            {
+                Vector3Int currentPos = new Vector3Int(x, y, 0);
+                Vector3Int abovePos = new Vector3Int(x, y - 1, 0);
+
+                if (nightMap.HasTile(currentPos) && !nightMap.HasTile(abovePos))
+                {
+                    nightgressmap.SetTile(abovePos, nightgressTile);
+                    nightgressmap.SetTransformMatrix(abovePos, Matrix4x4.TRS(new Vector3(0,0.472f,0), Quaternion.Euler(0, 0, 180), Vector3.one));
+                }
+            }
+        }
     }
 }

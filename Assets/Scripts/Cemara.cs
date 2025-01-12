@@ -14,7 +14,7 @@ public class Cemara : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        tilemap = GameObject.Find("blockmap").GetComponent<Tilemap>();
+        tilemap = GameObject.Find("blockMap").GetComponent<Tilemap>();
         BoundsInt bounds = tilemap.cellBounds;
         Vector3Int size = bounds.size;
         GridNode = GameObject.Find("GridNode");
