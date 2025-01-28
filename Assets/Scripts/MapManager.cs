@@ -60,6 +60,7 @@ public class MapManager : Singleton<MapManager>
     void Start()
     {
         //onChangeState();
+        initNoneMap();
         OnNewScene();
     }
     
@@ -242,22 +243,22 @@ public class MapManager : Singleton<MapManager>
 
 
     void initNoneMap(){
-        nightMap.ClearAllTiles();
+        // nightMap.ClearAllTiles();
         newTile = ScriptableObject.CreateInstance<CustomTile>();
         ((CustomTile)newTile).gameObjectToPlace = tilePrefab; // 设置你的GameObject
         // mapSize = blockmap.
-        mapSize = blockMap.cellBounds.size;
-        BoundsInt blockMapBounds = blockMap.cellBounds;
-        for (int x = blockMapBounds.x; x < blockMapBounds.x + blockMapBounds.size.x; x++) {
-            for (int y = blockMapBounds.y; y < blockMapBounds.y + blockMapBounds.size.y; y++) {
+        // mapSize = blockMap.cellBounds.size;
+        // BoundsInt blockMapBounds = blockMap.cellBounds;
+        // for (int x = blockMapBounds.x; x < blockMapBounds.x + blockMapBounds.size.x; x++) {
+        //     for (int y = blockMapBounds.y; y < blockMapBounds.y + blockMapBounds.size.y; y++) {
 
-                if (!tilemap.HasTile(new Vector3Int(x, y, 0))){
-                    Vector3Int position = new Vector3Int(x, y, 0);
-                    nightMap.SetTile(position, newTile); // 将Tile设置到Tilemap的指定位置
-                }
-            }
-        }
-        nightMap.gameObject.SetActive(false);
+        //         if (!tilemap.HasTile(new Vector3Int(x, y, 0))){
+        //             Vector3Int position = new Vector3Int(x, y, 0);
+        //             nightMap.SetTile(position, newTile); // 将Tile设置到Tilemap的指定位置
+        //         }
+        //     }
+        // }
+        // nightMap.gameObject.SetActive(false);
     }
 
     
